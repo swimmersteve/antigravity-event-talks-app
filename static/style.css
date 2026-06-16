@@ -1121,3 +1121,142 @@ body {
         align-items: flex-start;
     }
 }
+
+/* ==========================================
+   Light Mode & Theme Toggle Styles
+   ========================================== */
+
+.theme-toggle-btn {
+    padding: 0.625rem;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+body.light-mode {
+    --bg-app: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --bg-header: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(15, 23, 42, 0.08);
+    --border-color-hover: rgba(15, 23, 42, 0.16);
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    
+    --primary: #2563eb;
+    --primary-glow: rgba(37, 99, 235, 0.15);
+    --secondary: #4f46e5;
+    
+    --color-feature-bg: rgba(16, 185, 129, 0.06);
+    --color-issue-bg: rgba(239, 68, 68, 0.06);
+    --color-deprecation-bg: rgba(245, 158, 11, 0.06);
+    --color-general-bg: rgba(107, 114, 128, 0.06);
+    
+    --twitter-bg: #ffffff;
+}
+
+body.light-mode .search-box input {
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.1);
+}
+
+body.light-mode .search-box input:focus {
+    background: #ffffff;
+    border-color: var(--primary);
+}
+
+body.light-mode .controls-section {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body.light-mode .btn-card-action {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: var(--text-secondary);
+}
+
+body.light-mode .btn-card-action:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #0f172a;
+    border-color: rgba(0, 0, 0, 0.18);
+}
+
+body.light-mode .btn-card-action.tweet-btn {
+    background: rgba(29, 155, 240, 0.08);
+    color: var(--twitter-blue);
+    border-color: rgba(29, 155, 240, 0.15);
+}
+
+body.light-mode .btn-card-action.tweet-btn:hover {
+    background: var(--twitter-blue);
+    color: white;
+    border-color: var(--twitter-blue);
+}
+
+body.light-mode .tweet-preview-container {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.light-mode .tweet-card-mock {
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .mock-name {
+    color: #0f172a;
+}
+
+body.light-mode .mock-body {
+    color: #1e293b;
+}
+
+body.light-mode .mock-more-icon,
+body.light-mode .mock-handle {
+    color: #64748b;
+}
+
+body.light-mode .mock-link-card {
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+body.light-mode .mock-link-card:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+body.light-mode .mock-link-title {
+    color: #0f172a;
+}
+
+body.light-mode .mock-link-desc,
+body.light-mode .mock-link-domain {
+    color: #64748b;
+}
+
+body.light-mode #tweet-textarea {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+body.light-mode #tweet-textarea:focus {
+    border-color: var(--twitter-blue);
+}
+
+body.light-mode .toast {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .brand-text h1 {
+    background: linear-gradient(to right, #0f172a, #475569);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}

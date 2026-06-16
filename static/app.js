@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // UI Elements
     const btnRefresh = document.getElementById('btn-refresh');
+    const btnExport = document.getElementById('btn-export');
+    const themeToggle = document.getElementById('theme-toggle');
     const cacheBadge = document.getElementById('cache-badge');
     const notesGrid = document.getElementById('notes-grid');
     const loadingState = document.getElementById('loading-state');
@@ -46,6 +48,22 @@ document.addEventListener('DOMContentLoaded', () => {
     progressCircle.style.strokeDasharray = `${circleCircumference} ${circleCircumference}`;
     progressCircle.style.strokeDashoffset = circleCircumference;
 
+    // Initialize Theme
+    const initTheme = () => {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.body.classList.remove('dark-mode');
+            document.body.classList.add('light-mode');
+            themeToggle.querySelector('i').setAttribute('data-lucide', 'moon');
+        } else {
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
+            themeToggle.querySelector('i').setAttribute('data-lucide', 'sun');
+        }
+        lucide.createIcons();
+    };
+    initTheme();
+
     // Fetch notes on load
     fetchReleaseNotes();
 
@@ -53,6 +71,28 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRefresh.addEventListener('click', () => fetchReleaseNotes(true));
     btnRetry.addEventListener('click', () => fetchReleaseNotes(true));
     btnResetFilters.addEventListener('click', resetFilters);
+    
+    // Theme toggle click event
+    themeToggle.addEventListener('click', () => {
+        const isLight = document.body.classList.contains('light-mode');
+        if (isLight) {
+            document.body.classList.remove('light-mode');
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+            themeToggle.querySelector('i').setAttribute('data-lucide', 'sun');
+            showNotification('Switched to Dark Mode', 'success');
+        } else {
+            document.body.classList.remove('dark-mode');
+            document.body.classList.add('light-mode');
+            localStorage.setItem('theme', 'light');
+            themeToggle.querySelector('i').setAttribute('data-lucide', 'moon');
+            showNotification('Switched to Light Mode', 'success');
+        }
+        lucide.createIcons();
+    });
+
+    // Export CSV click event
+    btnExport.addEventListener('click', () => exportToCSV());
     
     // Search event
     searchInput.addEventListener('input', (e) => {
@@ -264,6 +304,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${note.content_html}
                 </div>
                 <div class="card-actions">
+                    <button class="btn-card-action copy-text-btn" title="Copy text content to clipboard">
+                        <i data-lucide="file-text"></i>
+                        <span>Copy Text</span>
+                    </button>
                     <button class="btn-card-action share-link" title="Copy link to clipboard">
                         <i data-lucide="copy"></i>
                         <span>Copy Link</span>
@@ -282,6 +326,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Click listeners for actions
+            card.querySelector('.copy-text-btn').onclick = () => {
+                const copyText = `BigQuery ${note.category} (${note.date}): ${note.content_text}\n\nRead more: ${note.link}`;
+                navigator.clipboard.writeText(copyText);
+                showNotification('Release note text content copied to clipboard!', 'success');
+            };
+            
             card.querySelector('.share-link').onclick = () => {
                 navigator.clipboard.writeText(note.link);
                 showNotification('Release note link copied to clipboard!', 'success');
@@ -440,6 +490,65 @@ document.addEventListener('DOMContentLoaded', () => {
         closeTweetComposer();
         showNotification('Opening X / Twitter Tweet Composer...', 'success');
     };
+
+    // Export current filtered notes to CSV
+    function exportToCSV() {
+        let filtered = releaseNotes;
+        if (activeCategory !== 'all') {
+            filtered = filtered.filter(n => n.category.toLowerCase() === activeCategory.toLowerCase());
+        }
+        if (searchQuery) {
+            filtered = filtered.filter(n => 
+                n.content_text.toLowerCase().includes(searchQuery) ||
+                n.category.toLowerCase().includes(searchQuery) ||
+                n.date.toLowerCase().includes(searchQuery)
+            );
+        }
+        
+        if (filtered.length === 0) {
+            showNotification('No data matches current search/filters to export!', 'warning');
+            return;
+        }
+        
+        const headers = ['ID', 'Date', 'Category', 'Update Link', 'Plaintext Content'];
+        
+        const escapeCSV = (text) => {
+            if (text === null || text === undefined) return '';
+            let stringVal = String(text);
+            stringVal = stringVal.replace(/"/g, '""');
+            if (stringVal.includes(',') || stringVal.includes('"') || stringVal.includes('\n') || stringVal.includes('\r')) {
+                return `"${stringVal}"`;
+            }
+            return stringVal;
+        };
+        
+        const csvRows = [headers.join(',')];
+        filtered.forEach(note => {
+            const row = [
+                escapeCSV(note.id),
+                escapeCSV(note.date),
+                escapeCSV(note.category),
+                escapeCSV(note.link),
+                escapeCSV(note.content_text)
+            ];
+            csvRows.push(row.join(','));
+        });
+        
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        const today = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `bigquery_release_notes_${activeCategory}_${today}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showNotification(`Successfully exported ${filtered.length} updates to CSV!`, 'success');
+    }
 
     // Toast Notification System
     function showNotification(message, type = 'info') {
