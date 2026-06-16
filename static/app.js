@@ -304,9 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${note.content_html}
                 </div>
                 <div class="card-actions">
-                    <button class="btn-card-action copy-text-btn" title="Copy text content to clipboard">
-                        <i data-lucide="file-text"></i>
-                        <span>Copy Text</span>
+                    <button class="btn-card-action copy-text-btn" title="Copy to clipboard">
+                        <i data-lucide="clipboard"></i>
+                        <span>Copy to Clipboard</span>
                     </button>
                     <button class="btn-card-action share-link" title="Copy link to clipboard">
                         <i data-lucide="copy"></i>
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.querySelector('.copy-text-btn').onclick = () => {
                 const copyText = `BigQuery ${note.category} (${note.date}): ${note.content_text}\n\nRead more: ${note.link}`;
                 navigator.clipboard.writeText(copyText);
-                showNotification('Release note text content copied to clipboard!', 'success');
+                showNotification('Copied to clipboard!', 'success');
             };
             
             card.querySelector('.share-link').onclick = () => {
