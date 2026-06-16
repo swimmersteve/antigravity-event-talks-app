@@ -69,19 +69,41 @@
 
         <!-- Controls (Search & Filters) -->
         <div class="controls-section">
-            <div class="search-box">
-                <i data-lucide="search" class="search-icon"></i>
-                <input type="text" id="search-input" placeholder="Search release notes by keywords (e.g. Gemini, SQL, JSON)..." autocomplete="off">
-                <button id="clear-search" class="clear-btn" style="display: none;">
-                    <i data-lucide="x"></i>
-                </button>
+            <div class="controls-top">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Search release notes by keywords (e.g. Gemini, SQL, JSON)..." autocomplete="off">
+                    <button id="clear-search" class="clear-btn" style="display: none;">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="date-filter-box">
+                    <i data-lucide="calendar-range" class="date-icon"></i>
+                    <select id="date-range-filter" title="Filter by date range">
+                        <option value="all">All Dates</option>
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
+                </div>
             </div>
             
             <div class="filter-group">
                 <span class="filter-label">Filter:</span>
-                <div class="filter-pills" id="category-filters">
-                    <button class="pill active" data-category="all">All</button>
-                    <!-- JavaScript will dynamically add other category pills -->
+                <div class="filter-pills-container">
+                    <div class="filter-pills" id="category-filters">
+                        <button class="pill active" data-category="all">All</button>
+                        <!-- JavaScript will dynamically add other category pills -->
+                    </div>
+                    <div class="filter-pills-divider"></div>
+                    <div class="filter-pills" id="status-filters">
+                        <button class="pill" id="pill-starred" data-status="starred" title="Show starred updates only">
+                            <i data-lucide="star" class="icon-inline"></i> Starred
+                        </button>
+                        <button class="pill" id="pill-unread" data-status="unread" title="Show unread updates only">
+                            <i data-lucide="eye-off" class="icon-inline"></i> Unread
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -138,9 +160,18 @@
                 </button>
             </div>
             
+            <div class="modal-body-tabs" id="modal-tabs">
+                <button class="modal-tab active" data-tab="edit">
+                    <i data-lucide="edit-3"></i> Draft Post
+                </button>
+                <button class="modal-tab" data-tab="preview">
+                    <i data-lucide="eye"></i> Live Preview
+                </button>
+            </div>
+            
             <div class="modal-body">
                 <!-- Composer Editor -->
-                <div class="composer-container">
+                <div class="composer-container modal-tab-content active" id="tab-content-edit">
                     <div class="composer-header">
                         <span class="composer-subtitle">Draft your post for X / Twitter</span>
                     </div>
@@ -162,7 +193,7 @@
                 </div>
 
                 <!-- Tweet Preview -->
-                <div class="tweet-preview-container">
+                <div class="tweet-preview-container modal-tab-content" id="tab-content-preview">
                     <div class="preview-title">Live Preview</div>
                     <div class="tweet-card-mock">
                         <div class="mock-header">
@@ -201,6 +232,11 @@
 
     <!-- Toast Notifications Container -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scroll-to-top" class="scroll-to-top-btn" title="Scroll to Top">
+        <i data-lucide="arrow-up"></i>
+    </button>
 
     <!-- Custom Script -->
     <script src="{{ url_for('static', filename='app.js') }}"></script>

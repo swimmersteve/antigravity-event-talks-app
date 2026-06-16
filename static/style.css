@@ -1260,3 +1260,294 @@ body.light-mode .brand-text h1 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+
+/* ==========================================
+   New UX Improvements Styles
+   ========================================== */
+
+/* Search Top & Date Filter Box */
+.controls-top {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    width: 100%;
+}
+
+.search-box {
+    flex-grow: 1;
+}
+
+.date-filter-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 185px;
+}
+
+.date-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+.date-filter-box select {
+    width: 100%;
+    padding: 0.875rem 2rem 0.875rem 2.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+}
+
+.date-filter-box select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Custom Dropdown Arrow */
+.date-filter-box::after {
+    content: '';
+    position: absolute;
+    right: 1.25rem;
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+
+body.light-mode .date-filter-box select {
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.1);
+}
+
+/* Filter Pills Split Grid */
+.filter-pills-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-pills-divider {
+    width: 1px;
+    height: 20px;
+    background-color: var(--border-color);
+}
+
+.icon-inline {
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 3px;
+    display: inline-block;
+}
+
+#pill-starred.active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+#pill-unread.active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Card Header Actions (Star & Read) */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.card-header-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.btn-card-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-card-icon:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+}
+
+body.light-mode .btn-card-icon:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.btn-card-icon.star-btn.active {
+    color: #f59e0b;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
+.btn-card-icon.star-btn.active i {
+    fill: #f59e0b;
+}
+
+.btn-card-icon.read-btn.active {
+    color: var(--primary);
+}
+
+.note-card.unread {
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.15), 0 4px 12px rgba(99, 102, 241, 0.05);
+}
+
+.note-card.unread::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    background-color: #6366f1;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #6366f1;
+}
+
+/* Search Highlighting */
+.highlight {
+    background: rgba(234, 179, 8, 0.25);
+    color: #ffffff !important;
+    padding: 0 0.15rem;
+    border-radius: 2px;
+    border-bottom: 2px solid #eab308;
+}
+
+body.light-mode .highlight {
+    background: rgba(234, 179, 8, 0.3);
+    color: #0f172a !important;
+}
+
+/* Scroll to Top Button */
+.scroll-to-top-btn {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem; /* Keep it on the left so it doesn't overlap notifications on the right */
+    z-index: 99;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 14px var(--primary-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-to-top-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.scroll-to-top-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--primary-glow);
+    filter: brightness(1.1);
+}
+
+.scroll-to-top-btn:active {
+    transform: translateY(0);
+}
+
+/* Tab Switcher inside Modal (Adaptive Mobile Layout) */
+.modal-body-tabs {
+    display: none; /* Hidden on desktop */
+    width: 100%;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .modal-body-tabs {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.modal-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.875rem 1rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.modal-tab:hover {
+    color: var(--text-primary);
+}
+
+.modal-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+/* Responsive Modal logic using tabs when screen is small */
+@media (max-width: 900px) {
+    .modal-body-tabs {
+        display: flex; /* Show tabs on mobile/tablets */
+    }
+    
+    .modal-body {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        max-height: 70vh;
+        padding: 0;
+    }
+    
+    .modal-tab-content {
+        display: none !important;
+    }
+    
+    .modal-tab-content.active {
+        display: flex !important;
+    }
+    
+    .composer-container {
+        border-bottom: none !important;
+    }
+}

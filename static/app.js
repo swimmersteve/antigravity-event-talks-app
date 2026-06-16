@@ -3,6 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let releaseNotes = [];
     let activeCategory = 'all';
     let searchQuery = '';
+    let activeDateRange = 'all'; // 'all', '7', '30', '90'
+    let activeStatusFilter = 'all'; // 'all', 'starred', 'unread'
+    
+    // Persistent Local Storage States for Bookmarks and Read States
+    let starredIds = JSON.parse(localStorage.getItem('starred_ids')) || [];
+    let readIds = JSON.parse(localStorage.getItem('read_ids')) || [];
     
     // UI Elements
     const btnRefresh = document.getElementById('btn-refresh');
@@ -21,6 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const clearSearch = document.getElementById('clear-search');
     const categoryFilters = document.getElementById('category-filters');
+    const dateRangeFilter = document.getElementById('date-range-filter');
+    const pillStarred = document.getElementById('pill-starred');
+    const pillUnread = document.getElementById('pill-unread');
+    
+    // Scroll to Top
+    const scrollTopBtn = document.getElementById('scroll-to-top');
     
     // Stats Elements
     const statTotal = document.getElementById('stat-total');
@@ -39,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mockLinkCard = document.getElementById('mock-link-card');
     const mockLinkDomain = document.getElementById('mock-link-domain');
     const toastContainer = document.getElementById('toast-container');
+    const modalTabs = document.querySelectorAll('.modal-tab');
     
     let currentActiveUpdate = null; // Holds the release note currently in the composer
     
@@ -72,6 +85,27 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRetry.addEventListener('click', () => fetchReleaseNotes(true));
     btnResetFilters.addEventListener('click', resetFilters);
     
+    // Search event
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        clearSearch.style.display = searchQuery.length > 0 ? 'block' : 'none';
+        filterAndRenderNotes();
+    });
+    
+    clearSearch.addEventListener('click', () => {
+        searchInput.value = '';
+        searchQuery = '';
+        clearSearch.style.display = 'none';
+        filterAndRenderNotes();
+        searchInput.focus();
+    });
+
+    // Date range change
+    dateRangeFilter.addEventListener('change', (e) => {
+        activeDateRange = e.target.value;
+        filterAndRenderNotes();
+    });
+
     // Theme toggle click event
     themeToggle.addEventListener('click', () => {
         const isLight = document.body.classList.contains('light-mode');
@@ -93,31 +127,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Export CSV click event
     btnExport.addEventListener('click', () => exportToCSV());
-    
-    // Search event
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase().strip();
-        clearSearch.style.display = searchQuery.length > 0 ? 'block' : 'none';
+
+    // Status filter clicks
+    pillStarred.addEventListener('click', () => {
+        if (activeStatusFilter === 'starred') {
+            activeStatusFilter = 'all';
+            pillStarred.classList.remove('active');
+        } else {
+            activeStatusFilter = 'starred';
+            pillStarred.classList.add('active');
+            pillUnread.classList.remove('active');
+        }
         filterAndRenderNotes();
     });
     
-    clearSearch.addEventListener('click', () => {
-        searchInput.value = '';
-        searchQuery = '';
-        clearSearch.style.display = 'none';
+    pillUnread.addEventListener('click', () => {
+        if (activeStatusFilter === 'unread') {
+            activeStatusFilter = 'all';
+            pillUnread.classList.remove('active');
+        } else {
+            activeStatusFilter = 'unread';
+            pillUnread.classList.add('active');
+            pillStarred.classList.remove('active');
+        }
         filterAndRenderNotes();
-        searchInput.focus();
     });
 
-    // Helper to trim and clean spaces
-    String.prototype.strip = function() {
-        return this.replace(/^\s+|\s+$/g, '');
-    };
+    // Scroll to Top trigger
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+            scrollTopBtn.classList.add('visible');
+        } else {
+            scrollTopBtn.classList.remove('visible');
+        }
+    });
+
+    scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    // Adaptive Modal Tabs Click Handlers
+    modalTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            modalTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            const targetTab = tab.getAttribute('data-tab');
+            document.querySelectorAll('.modal-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (targetTab === 'edit') {
+                document.getElementById('tab-content-edit').classList.add('active');
+            } else {
+                document.getElementById('tab-content-preview').classList.add('active');
+            }
+        });
+    });
+
+    // Keyboard Shortcuts Listener
+    document.addEventListener('keydown', (e) => {
+        // Focus search box on '/' keypress (unless typing in input/textarea)
+        if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+        
+        // Close modal on 'Escape'
+        if (e.key === 'Escape' && tweetModal.style.display === 'flex') {
+            closeTweetComposer();
+        }
+    });
 
     // Fetching Logic
     async function fetchReleaseNotes(forceRefresh = false) {
         setLoading(true);
-        
         const url = forceRefresh ? '/api/release-notes?refresh=true' : '/api/release-notes';
         
         try {
@@ -130,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStats(releaseNotes);
                 buildCategoryFilters(releaseNotes);
                 filterAndRenderNotes();
-                showNotification(`Successfully fetched ${releaseNotes.length} updates!`, 'success');
+                if (forceRefresh) {
+                    showNotification(`Successfully refreshed ${releaseNotes.length} updates!`, 'success');
+                }
             } else {
                 showError(data.error || 'Failed parsing release notes XML.');
             }
@@ -202,7 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pill) {
                         pill.click();
                     } else {
-                        // Fallback: search or set active category manually
                         activeCategory = targetFilter;
                         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
                         filterAndRenderNotes();
@@ -214,12 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Build Category Pills Dynamically
     function buildCategoryFilters(notes) {
-        // Find unique categories, filter out empty ones, sort alphabetically
         const categories = [...new Set(notes.map(n => n.category))]
             .filter(c => c && c.trim() !== '')
             .sort();
             
-        // Keep the "All" pill and clear the rest
         categoryFilters.innerHTML = '<button class="pill active" data-category="all">All</button>';
         
         categories.forEach(cat => {
@@ -244,22 +331,87 @@ document.addEventListener('DOMContentLoaded', () => {
         searchQuery = '';
         clearSearch.style.display = 'none';
         activeCategory = 'all';
+        activeDateRange = 'all';
+        activeStatusFilter = 'all';
+        dateRangeFilter.value = 'all';
+        
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
         const allPill = document.querySelector('.pill[data-category="all"]');
         if (allPill) allPill.classList.add('active');
+        
+        pillStarred.classList.remove('active');
+        pillUnread.classList.remove('active');
+        
         filterAndRenderNotes();
+    }
+
+    // Star / Read State actions
+    function toggleStar(noteId) {
+        const index = starredIds.indexOf(noteId);
+        if (index > -1) {
+            starredIds.splice(index, 1);
+            showNotification('Removed star bookmark', 'info');
+        } else {
+            starredIds.push(noteId);
+            showNotification('Added star bookmark!', 'success');
+        }
+        localStorage.setItem('starred_ids', JSON.stringify(starredIds));
+        filterAndRenderNotes();
+    }
+
+    function toggleRead(noteId) {
+        const index = readIds.indexOf(noteId);
+        if (index > -1) {
+            readIds.splice(index, 1);
+        } else {
+            readIds.push(noteId);
+        }
+        localStorage.setItem('read_ids', JSON.stringify(readIds));
+        filterAndRenderNotes();
+    }
+
+    // Highlighting parser (ignores terms inside HTML tags to prevent tag damage)
+    function highlightText(htmlContent, query) {
+        if (!query) return htmlContent;
+        // Escape regex special characters in user search query
+        const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        // Match tag elements OR search keywords. Replace only the search keywords.
+        const regex = new RegExp(`(<[^>]+>)|(${escapedQuery})`, 'gi');
+        return htmlContent.replace(regex, (match, tag, textMatch) => {
+            if (tag) return tag; // Return tag unaffected
+            return `<mark class="highlight">${textMatch}</mark>`;
+        });
     }
 
     // Filter and Render Cards
     function filterAndRenderNotes() {
         let filtered = releaseNotes;
         
-        // Filter by Category
+        // 1. Filter by Category
         if (activeCategory !== 'all') {
             filtered = filtered.filter(n => n.category.toLowerCase() === activeCategory.toLowerCase());
         }
         
-        // Filter by Search Query
+        // 2. Filter by Date Range
+        if (activeDateRange !== 'all') {
+            const daysLimit = parseInt(activeDateRange);
+            const now = new Date();
+            const limitDate = new Date(now.getTime() - (daysLimit * 24 * 60 * 60 * 1000));
+            filtered = filtered.filter(n => {
+                if (!n.updated) return false;
+                const noteDate = new Date(n.updated);
+                return noteDate >= limitDate;
+            });
+        }
+
+        // 3. Filter by Starred/Unread Status
+        if (activeStatusFilter === 'starred') {
+            filtered = filtered.filter(n => starredIds.includes(n.id));
+        } else if (activeStatusFilter === 'unread') {
+            filtered = filtered.filter(n => !readIds.includes(n.id));
+        }
+        
+        // 4. Filter by Search Query
         if (searchQuery) {
             filtered = filtered.filter(n => 
                 n.content_text.toLowerCase().includes(searchQuery) ||
@@ -268,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
         
-        // Render
+        // Render results
         if (filtered.length === 0) {
             notesGrid.style.display = 'none';
             emptyState.style.display = 'flex';
@@ -283,12 +435,18 @@ document.addEventListener('DOMContentLoaded', () => {
         notesGrid.innerHTML = '';
         
         notes.forEach(note => {
+            const isStarred = starredIds.includes(note.id);
+            const isRead = readIds.includes(note.id);
+            
             const card = document.createElement('div');
-            card.className = 'note-card';
+            card.className = `note-card ${isRead ? 'read' : 'unread'}`;
             card.setAttribute('data-category', note.category);
             
             const catClass = note.category.toLowerCase();
             const badgeClass = ['feature', 'issue', 'deprecation', 'notice'].includes(catClass) ? catClass : 'general';
+            
+            // Highlight text if search query is active
+            const highlightedHTML = highlightText(note.content_html, searchQuery);
             
             card.innerHTML = `
                 <div class="card-header">
@@ -299,9 +457,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>${note.date}</span>
                         </span>
                     </div>
+                    <div class="card-header-actions">
+                        <button class="btn-card-icon star-btn ${isStarred ? 'active' : ''}" title="${isStarred ? 'Unstar update' : 'Star update'}">
+                            <i data-lucide="star"></i>
+                        </button>
+                        <button class="btn-card-icon read-btn ${isRead ? 'active' : ''}" title="${isRead ? 'Mark as Unread' : 'Mark as Read'}">
+                            <i data-lucide="${isRead ? 'eye' : 'eye-off'}"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    ${note.content_html}
+                    ${highlightedHTML}
                 </div>
                 <div class="card-actions">
                     <button class="btn-card-action copy-text-btn" title="Copy to clipboard">
@@ -325,19 +491,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 a.setAttribute('rel', 'noopener noreferrer');
             });
             
+            // Auto Mark as Read when clicking inside card body (excluding buttons or links)
+            card.onclick = (e) => {
+                if (!e.target.closest('button') && !e.target.closest('a')) {
+                    if (!readIds.includes(note.id)) {
+                        toggleRead(note.id);
+                    }
+                }
+            };
+            
             // Click listeners for actions
-            card.querySelector('.copy-text-btn').onclick = () => {
+            card.querySelector('.star-btn').onclick = (e) => {
+                e.stopPropagation();
+                toggleStar(note.id);
+            };
+            
+            card.querySelector('.read-btn').onclick = (e) => {
+                e.stopPropagation();
+                toggleRead(note.id);
+            };
+
+            card.querySelector('.copy-text-btn').onclick = (e) => {
+                e.stopPropagation();
                 const copyText = `BigQuery ${note.category} (${note.date}): ${note.content_text}\n\nRead more: ${note.link}`;
                 navigator.clipboard.writeText(copyText);
                 showNotification('Copied to clipboard!', 'success');
             };
             
-            card.querySelector('.share-link').onclick = () => {
+            card.querySelector('.share-link').onclick = (e) => {
+                e.stopPropagation();
                 navigator.clipboard.writeText(note.link);
                 showNotification('Release note link copied to clipboard!', 'success');
             };
             
-            card.querySelector('.tweet-btn').onclick = () => {
+            card.querySelector('.tweet-btn').onclick = (e) => {
+                e.stopPropagation();
                 openTweetComposer(note);
             };
             
@@ -351,22 +539,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function openTweetComposer(note) {
         currentActiveUpdate = note;
         
-        // Construct a default high-quality tweet message
-        // Format: "📢 BigQuery Feature (June 15, 2026): Use Gemini Cloud Assist to analyze SQL... https://docs.cloud.google.com/..."
+        // Construct default tweet text
         const prefix = `📢 BigQuery ${note.category} (${note.date}): `;
         const suffix = `\n\n${note.link}`;
-        
-        // Calculate remaining room for description text
-        // URL counts as 23 characters on Twitter
         const urlLengthInTweet = 23;
-        const spacingAndNewlinesLength = 2; // For '\n\n'
+        const spacingAndNewlinesLength = 2;
         const totalStaticLength = prefix.length + urlLengthInTweet + spacingAndNewlinesLength;
         const availableTextSpace = 280 - totalStaticLength;
         
-        // Trim content description if it is too long
         let description = note.content_text;
-        
-        // Remove duplicate spaces and clean HTML characters if any
         description = description.replace(/\s+/g, ' ');
         
         if (description.length > availableTextSpace) {
@@ -375,11 +556,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const defaultTweetText = `${prefix}${description}${suffix}`;
         
-        // Set values in composer
+        // Reset tabs in modal
+        modalTabs.forEach(t => t.classList.remove('active'));
+        const defaultTab = document.querySelector('.modal-tab[data-tab="edit"]');
+        if (defaultTab) defaultTab.classList.add('active');
+        
+        document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+        const defaultContent = document.getElementById('tab-content-edit');
+        if (defaultContent) defaultContent.classList.add('active');
+        
+        // Set values
         tweetTextarea.value = defaultTweetText;
         updateTweetCount();
         
-        // Set mock preview link
+        // Domain extraction for mockup
         try {
             const domain = new URL(note.link).hostname;
             mockLinkDomain.textContent = domain;
@@ -387,11 +577,11 @@ document.addEventListener('DOMContentLoaded', () => {
             mockLinkDomain.textContent = 'cloud.google.com';
         }
         
-        // Show modal
+        // Show modal & freeze page scroll
         tweetModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Disable scroll under modal
+        document.body.style.overflow = 'hidden';
         
-        // Focus textarea and place cursor before URL
+        // Focus cursor
         tweetTextarea.focus();
         const cursorPosition = prefix.length + description.length;
         tweetTextarea.setSelectionRange(cursorPosition, cursorPosition);
@@ -401,29 +591,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeTweetComposer() {
         tweetModal.style.display = 'none';
-        document.body.style.overflow = ''; // Re-enable scroll
+        document.body.style.overflow = ''; // Unfreeze page scroll
         currentActiveUpdate = null;
     }
 
     closeModal.onclick = closeTweetComposer;
     
-    // Close on clicking overlay
     tweetModal.onclick = (e) => {
         if (e.target === tweetModal) {
             closeTweetComposer();
         }
     };
     
-    // Handle typing inside tweet composer
     tweetTextarea.oninput = updateTweetCount;
 
-    // Twitter-compliant character counter
-    // Twitter wraps all links in t.co which consumes exactly 23 characters
     function calculateTwitterLength(text) {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const textWithoutUrls = text.replace(urlRegex, '');
         const urls = text.match(urlRegex) || [];
-        
         return textWithoutUrls.length + (urls.length * 23);
     }
 
@@ -432,38 +617,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const len = calculateTwitterLength(text);
         const remaining = 280 - len;
         
-        // Update circular indicator
+        // Update circle indicator
         const pct = Math.max(0, Math.min(100, (len / 280) * 100));
         const offset = circleCircumference - (pct / 100) * circleCircumference;
         progressCircle.style.strokeDashoffset = offset;
         
-        // Color coding circular progress indicator and text
+        // Circle colors
         if (remaining < 0) {
-            progressCircle.style.stroke = '#ef4444'; // Red
+            progressCircle.style.stroke = '#ef4444';
             charCount.className = 'char-count-text text-issue';
             btnSendTweet.disabled = true;
         } else if (remaining <= 20) {
-            progressCircle.style.stroke = '#f59e0b'; // Amber
+            progressCircle.style.stroke = '#f59e0b';
             charCount.className = 'char-count-text text-deprecation';
             btnSendTweet.disabled = false;
         } else {
-            progressCircle.style.stroke = '#1d9bf0'; // Twitter Blue
+            progressCircle.style.stroke = '#1d9bf0';
             charCount.className = 'char-count-text';
             btnSendTweet.disabled = false;
         }
         
         charCount.textContent = remaining;
         
-        // If textarea is empty, disable Post button
         if (text.trim().length === 0) {
             btnSendTweet.disabled = true;
         }
         
-        // Update mock tweet body preview
-        // Format links in body differently or just display text
         mockTweetText.textContent = text;
         
-        // Simple mock link detector for link card preview
+        // Mock Link Card detector
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const urls = text.match(urlRegex) || [];
         if (urls.length > 0) {
@@ -479,14 +661,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Fire Tweet!
     btnSendTweet.onclick = () => {
         const tweetText = tweetTextarea.value;
         const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-        
-        // Open Twitter Web Intent
         window.open(twitterIntentUrl, '_blank', 'noopener,noreferrer,width=550,height=420');
-        
         closeTweetComposer();
         showNotification('Opening X / Twitter Tweet Composer...', 'success');
     };
@@ -496,6 +674,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let filtered = releaseNotes;
         if (activeCategory !== 'all') {
             filtered = filtered.filter(n => n.category.toLowerCase() === activeCategory.toLowerCase());
+        }
+        if (activeDateRange !== 'all') {
+            const daysLimit = parseInt(activeDateRange);
+            const now = new Date();
+            const limitDate = new Date(now.getTime() - (daysLimit * 24 * 60 * 60 * 1000));
+            filtered = filtered.filter(n => {
+                if (!n.updated) return false;
+                const noteDate = new Date(n.updated);
+                return noteDate >= limitDate;
+            });
+        }
+        if (activeStatusFilter === 'starred') {
+            filtered = filtered.filter(n => starredIds.includes(n.id));
+        } else if (activeStatusFilter === 'unread') {
+            filtered = filtered.filter(n => !readIds.includes(n.id));
         }
         if (searchQuery) {
             filtered = filtered.filter(n => 
